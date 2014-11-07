@@ -1,0 +1,79 @@
+Manual for the Übersquirrel 65c02 Forth Assembler
+Scot W. Stevenson <scot.stevenson@gmail.com>
+First version: 7. Nov 2014 ("N7 Day")
+This version: 7. Nov 2014
+
+
+WHY ANOTHER 65c02 ASSEMBLER?
+
+(Very good ones out there, for instance Ophis 2.0)
+
+
+WHY FORTH?
+
+
+SYNTAX
+
+Because we're dealing with Forth here, the format is slightly different. We start with the operand, followed by a special version of the opcode that includes the mode. For instance: 
+
+    lda #$ea        becomes           ea lda.i
+    lda $1000       becomes         1000 lda.a
+
+The new opcodes are orientated along the space between them. We call this adding a "postfix" to the opcode. The list of postfixes is:
+
+    implied                   dex                    dex
+    accumulator               asl                    asl 
+    relative                  bne $01             01 bne (ALPHA)
+
+    immediate                 lda #$00            00 lda.i
+    absolute                  lda $1000         1000 lda.a
+    zero page                 lda $10             10 lda.z
+    absolute x indexed        lda $1000,x       1000 lda.x
+    absolute y indexed        lda $1000,y       1000 lda.y
+    zero page x indexed       lda $00,x           00 lda.zx
+    zero page y indexed       lda $00,y           00 lda.zy
+    absolute indirect         jmp ($1000)       1000 jmp.i
+    zero page indirect        lda ($10)           10 lda.zi   (65c02)
+    zp indirect x indexed     lda ($10,x)         10 lda.zix
+    zp indirect y indexed     lda ($10),y         10 lda.ziy
+    indexed indirect          jmp ($1000,x)     1000 jmp.ix   (65c02)
+
+Note we don't have to use "$", "%" or "#" for formats because we can use HEX, BINARY, and DECIMAL from normal Forth. As an example, we'll convert this small loop
+
+                lda #$00
+                tax
+        loop
+                sta $1000,x
+                dex
+                bne loop
+
+to Übersquirrel Forth Syntax:
+
+                00 lda.i
+                tax
+        .l loop                   \ ALPHA
+                1000 sta.x
+                dex
+                loop bne
+
+This is messy, so we pretty print it to
+
+                  00 lda.i
+                     tax
+        .l loop
+                1000 sta.x
+                     dex
+                loop bne   
+
+Note the loop syntax is subject to change.
+
+
+
+
+
+COPYRIGHT 
+
+
+CREDITS
+
+
