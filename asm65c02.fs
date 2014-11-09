@@ -13,6 +13,7 @@ variable startcode
 
 
 \ --- Helper Routines --- 
+
 \ : store1 ( addr opcode-- addr )  \ Store single byte instruction
    \ over c! 1 + ; 
 \ : store2 ( addr opcode -- addr )  \ Store double byte instruction
@@ -27,24 +28,26 @@ variable startcode
 
 
 \ --- Opcodes ---
+\ Put more than one in each row
 
 : brk ( -- ) 00 c, ;  : nop ( -- ) 0ea c, ; 
 
+\ --- Main Commands
 
-: assemble ( -- addr u )   \ takes filename as parameter
+: assemble ( "name" -- addr u )   \ takes filename as parameter
 
-   ." (TODO load file given )" cr
+   cr ." (TODO load file given )" cr
 
-   pad 0ff accept
-   pad swap type
+   parse-name  
 
    
 
-   ." (TODO create symbol table)" cr
+   cr ." (TODO create symbol table)" 
 
    here startcode !
 
-   ." (TODO assemble)" 
+   cr ." (TODO assemble)" ; 
 
+   
 
 

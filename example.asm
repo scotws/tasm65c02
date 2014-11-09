@@ -4,7 +4,10 @@
 
 \ Comments start with a backslash like in all of Forth instead of a ; 
 
+
         hex     \ we can use all the normal Forth commands
+
+        4000 origin     \ code for where the finished code goes
 
         nop     \ opcode-only instructions are the same
 

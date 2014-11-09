@@ -1,10 +1,10 @@
 Manual for the Übersquirrel 65c02 Forth Assembler
 Scot W. Stevenson <scot.stevenson@gmail.com>
-First version: 7. Nov 2014 ("N7 Day")
-This version: 7. Nov 2014
+First version: 07. Nov 2014 ("N7 Day")
+This version: 09. Nov 2014
 
 
-WHY ANOTHER 65c02 ASSEMBLER?
+SERIOUSLY, WHY ANOTHER 65c02 ASSEMBLER?
 
 (Very good ones out there, for instance Ophis 2.0)
 
@@ -23,6 +23,7 @@ The new opcodes are orientated along the space between them. We call this adding
 
     implied                   dex                    dex
     accumulator               asl                    asl 
+
     relative                  bne $01             01 bne (ALPHA)
 
     immediate                 lda #$00            00 lda.i
@@ -47,7 +48,7 @@ Note we don't have to use "$", "%" or "#" for formats because we can use HEX, BI
                 dex
                 bne loop
 
-to Übersquirrel Forth Syntax:
+to Übersquirrel syntax:
 
                 00 lda.i
                 tax
@@ -60,12 +61,12 @@ This is messy, so we pretty print it to
 
                   00 lda.i
                      tax
-        .l loop
+        .l loop                   \ ALPHA
                 1000 sta.x
                      dex
                 loop bne   
 
-Note the loop syntax is subject to change.
+(Note the loop syntax is subject to change.) For this, the program prettyprint.fs is included. 
 
 
 
