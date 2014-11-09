@@ -17,7 +17,7 @@ SYNTAX
 Because we're dealing with Forth here, the format is slightly different. We start with the operand, followed by a special version of the opcode that includes the mode. For instance: 
 
     lda #$ea        becomes           ea lda.i
-    lda $1000       becomes         1000 lda.a
+    lda $1000       becomes         1000 lda 
 
 The new opcodes are orientated along the space between them. We call this adding a "postfix" to the opcode. The list of postfixes is:
 
@@ -26,17 +26,17 @@ The new opcodes are orientated along the space between them. We call this adding
     relative                  bne $01             01 bne (ALPHA)
 
     immediate                 lda #$00            00 lda.i
-    absolute                  lda $1000         1000 lda.a
-    zero page                 lda $10             10 lda.z
+    absolute                  lda $1000         1000 lda      [or lda.a]
     absolute x indexed        lda $1000,x       1000 lda.x
     absolute y indexed        lda $1000,y       1000 lda.y
+    absolute indirect         jmp ($1000)       1000 jmp.i
+    indexed indirect          jmp ($1000,x)     1000 jmp.ix   (65c02)
+    zero page                 lda $10             10 lda.z
     zero page x indexed       lda $00,x           00 lda.zx
     zero page y indexed       lda $00,y           00 lda.zy
-    absolute indirect         jmp ($1000)       1000 jmp.i
     zero page indirect        lda ($10)           10 lda.zi   (65c02)
     zp indirect x indexed     lda ($10,x)         10 lda.zix
     zp indirect y indexed     lda ($10),y         10 lda.ziy
-    indexed indirect          jmp ($1000,x)     1000 jmp.ix   (65c02)
 
 Note we don't have to use "$", "%" or "#" for formats because we can use HEX, BINARY, and DECIMAL from normal Forth. As an example, we'll convert this small loop
 
