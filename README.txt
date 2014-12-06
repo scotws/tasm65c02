@@ -1,7 +1,7 @@
 The Übersquirrel 65c02 Forth Assembler
 Scot W. Stevenson <scot.stevenson@gmail.com>
 First version: 7. Nov 2014 ("N7 Day")
-This version: 7. Nov 2014
+This version: 06. Dez 2014
 
 This is an assembler for the 65c02 8-bit MPU written in gforth. Technically, this makes it a cross assembler. 
 
@@ -16,7 +16,7 @@ This assembler makes a few assumptions:
 
 - It is written for the 65c02 (more specifically, the WDC65c02) only. It shouldn't be a problem to adapt it to, say, the origional 6502, but this version makes no such attempt. 
 
-- It is written by and primary for a person who is a touch-typist -- me. This might sound strange, but it explains the lack of special characters (like $ or [) in the syntax. 
+- It is written by and primary for a person who is a touch-typist -- me. This is why there are few special characters (like $ or [) in the syntax: They take too much time to reach. 
 
 
 

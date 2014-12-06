@@ -1,7 +1,7 @@
 Manual for the Übersquirrel 65c02 Forth Assembler
 Scot W. Stevenson <scot.stevenson@gmail.com>
 First version: 07. Nov 2014 ("N7 Day")
-This version: 09. Nov 2014
+This version: 06. Dez 2014
 
 
 SERIOUSLY, WHY ANOTHER 65c02 ASSEMBLER?
@@ -16,28 +16,28 @@ SYNTAX
 
 Because we're dealing with Forth here, the format is slightly different. We start with the operand, followed by a special version of the opcode that includes the mode. For instance: 
 
-    lda #$ea        becomes           ea lda.i
+    lda #$ea        becomes           ea lda.#
     lda $1000       becomes         1000 lda 
 
 The new opcodes are orientated along the space between them. We call this adding a "postfix" to the opcode. The list of postfixes is:
 
     implied                   dex                    dex
-    accumulator               asl                    asl 
+    accumulator               asl                    asl.a 
 
     relative                  bne $01             01 bne (ALPHA)
 
-    immediate                 lda #$00            00 lda.i
-    absolute                  lda $1000         1000 lda      [or lda.a]
+    immediate                 lda #$00            00 lda.#
+    absolute                  lda $1000         1000 lda
     absolute x indexed        lda $1000,x       1000 lda.x
     absolute y indexed        lda $1000,y       1000 lda.y
     absolute indirect         jmp ($1000)       1000 jmp.i
-    indexed indirect          jmp ($1000,x)     1000 jmp.ix   (65c02)
+    indexed indirect          jmp ($1000,x)     1000 jmp.xi   (65c02)
     zero page                 lda $10             10 lda.z
     zero page x indexed       lda $00,x           00 lda.zx
     zero page y indexed       lda $00,y           00 lda.zy
     zero page indirect        lda ($10)           10 lda.zi   (65c02)
-    zp indirect x indexed     lda ($10,x)         10 lda.zix
-    zp indirect y indexed     lda ($10),y         10 lda.ziy
+    zp indirect x indexed     lda ($10,x)         10 lda.zxi  [sic]
+    zp indirect y indexed     lda ($10),y         10 lda.ziy  [sic]
 
 Note we don't have to use "$", "%" or "#" for formats because we can use HEX, BINARY, and DECIMAL from normal Forth. As an example, we'll convert this small loop
 
@@ -50,7 +50,7 @@ Note we don't have to use "$", "%" or "#" for formats because we can use HEX, BI
 
 to Übersquirrel syntax:
 
-                00 lda.i
+                00 lda.#
                 tax
         .l loop                   \ ALPHA
                 1000 sta.x
@@ -59,7 +59,7 @@ to Übersquirrel syntax:
 
 This is messy, so we pretty print it to
 
-                  00 lda.i
+                  00 lda.#
                      tax
         .l loop                   \ ALPHA
                 1000 sta.x

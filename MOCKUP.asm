@@ -35,9 +35,9 @@ loop    sta $1000,x
 
 .l f_toupper
 
-        char a cmp.i
+        char a cmp.#
         _done bcc
-        char z 1+ cmp.i
+        char z 1+ cmp.#
         _done bcs
 
         sec
