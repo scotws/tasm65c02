@@ -1,15 +1,17 @@
 Manual for the Übersquirrel 65c02 Forth Assembler
 Scot W. Stevenson <scot.stevenson@gmail.com>
 First version: 07. Nov 2014 ("N7 Day")
-This version: 06. Dez 2014
+This version: 08. Dez 2014
 
 
 SERIOUSLY, WHY ANOTHER 65c02 ASSEMBLER?
 
 (Very good ones out there, for instance Ophis 2.0)
+(I really, really don't like the syntax)
+(Older assemblers focused on small size)
 
 
-WHY FORTH?
+BUT WHY FORTH?
 
 
 SYNTAX
