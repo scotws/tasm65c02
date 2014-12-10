@@ -1,12 +1,13 @@
 Manual for the Übersquirrel 65c02 Forth Assembler
 Scot W. Stevenson <scot.stevenson@gmail.com>
 First version: 07. Nov 2014 ("N7 Day")
-This version: 08. Dez 2014
+This version: 10. Dez 2014
 
 
 SERIOUSLY, WHY ANOTHER 65c02 ASSEMBLER?
 
 (Very good ones out there, for instance Ophis 2.0)
+(Want to write one in Forth for the practice and because I'm going to build a Forth machine)
 (I really, really don't like the syntax)
 (Older assemblers focused on small size)
 
@@ -45,32 +46,32 @@ Note we don't have to use "$", "%" or "#" for formats because we can use HEX, BI
 
                 lda #$00
                 tax
-        loop
+        hierher
                 sta $1000,x
                 dex
-                bne loop
+                bne hierher
 
 to Übersquirrel syntax:
 
-                00 lda.#
+             00 lda.#
                 tax
-        .l loop                   \ ALPHA
-                1000 sta.x
+   .l hierher
+           1000 sta.x
                 dex
-                loop bne
-
-This is messy, so we pretty print it to
-
-                  00 lda.#
-                     tax
-        .l loop                   \ ALPHA
-                1000 sta.x
-                     dex
-                loop bne   
-
-(Note the loop syntax is subject to change.) For this, the program prettyprint.fs is included. 
+        hierher bne   
 
 
+There are a few special cases. The assembler instruction "and" conflicts with the Forth AND, so it is coded and. (note dot at the end). 
+
+
+ASSEMBLY
+
+
+SAVING THE OUTPUT
+
+   s" filename.bin" w/o create-file 
+   drop .end rot
+   write-file 
 
 
 

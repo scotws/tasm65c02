@@ -1,12 +1,12 @@
 \ Example assembly source file for the Übersquirrel 65c02 Assembler
 \ Scot W. Stevenson <scot.stevenson@gmail.com>
-\ This version: 10 Dec 2014
+\ This version: 10. Dec 2014
 
 \ Remember this is assembler source file is actually a Forth programm listing
 \ as far as Forth is concerned. As such, the file type should be .fs instead
 \ of .asm if you want correct syntax highlighting with an editor such as vi
 
-\ Tool chain: Start Forth, INCLUDE asm65c02.fs, INCLUDE the file to be assembled
+\ To test: Start gforth, INCLUDE asm65c02.fs, INCLUDE example.fs (this file)
 
         \ we can use all the normal Forth commands; HEX should actually be 
         \ redundant
@@ -17,20 +17,53 @@
 
         \ .org sets target address on 65c02 machine
         \ use leading zeros with hex numbers to make sure they are not seen
-        \ as words by the Forth interpreter
+        \ as words by the Forth interpreter 
         0c000 .org      
 
-        \ we can put more than one instruction in a row
-        nop nop         
+        \ because this is actually a Forth file, we can put more than one 
+        \ instruction in a row
+        nop nop nop
 
-        \ store bytes with assembler commands, not (!) normal Forth C, 
-        \ instructions
-        0ff b, 0ff b, ff b,     
+        \ instructions that have an operand put it before the opcode (the Forth
+        \ "reverse polish notation" (RPN) thing). See MANUAL.txt for syntax of
+        \ the various addressing modes
+          00 lda.#     \ conventional syntax: lda #$00
+             tax
+        1020 sta.x     \ conventional syntax: sta $1020,x
 
-        \ store words in correct little-endian format
+
+        \ store bytes with the B, assembler command, not the normal Forth C, 
+        \ instruction
+        0ff b, 0ff b, 0ff b,     
+
+        \ store words in correct little-endian format with W,
         1122 w, 3344 w, 
 
-        \ more code
+        \ store strings with S" and STR, (S, is reserved by gforth) 
+        s" cats are cool" str, 
+
+
+        \ define variables with .EQU
+        88 .equ cat
+        cat lda.#
+
+
+        \ conditional assembly is trivial with Forth commands
+        : havecat? ( u --- ) 
+            88 = if  s" nice" str,  else  s" damn" str,  then ; 
+
+        cat havecat?  \ stores the "nice" string (of course) 
+
+
+        \ define labels with .L 
+        .l comehere 
+
+        \ .LC gives us the current address being assembled (the "*"
+        \ of other assemblers). Use normal Forth math functions to 
+        \ manipulate it
+        .lc 2 +  jmp 
+        nop nop 
+
         brk 
 
         \ more comments printed to the screen
@@ -41,6 +74,3 @@
 
         \ or have the machine print out the hex code at the end itself
         cr 2dup dump
-
-
-

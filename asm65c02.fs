@@ -3,35 +3,36 @@
 \ First version: 7. Nov 2014 ("N7 Day")
 \ This version: 10. Dez 2014
 
-\ called in the form 
-\ 
-\     <destination> ASSEMBLE ( 65addr -- addr u ) 
-\ 
-\ with 65addr the target address on the 65c02, addr the start of the 
-\ assembled code and u its size in bytes
+\ Written for gforth 0.7.0 
 
-wordlist >order definitions
+\ wordlist >order definitions
 
 hex
 
 variable lc0  \ initial target address on 65c02 machine
 
-create buffer 0ffff allot  \ area to store assembled machine code
+create staging 0ffff allot  \ 64k area to store assembled machine code
+staging 0ffff erase 
+
 variable bc  0 bc !  \ buffer counter, offset  TODO see if this should be TOS 
 
 : swapbytes ( u -- u u )  \ convert to little-endian format
-   dup  0ff00 and  8 rshift  
-   swap  0ff and  ; 
+   dup 0ff00 and  8 rshift   
+   swap 0ff and ; 
 
 \ Calculate location counter from target address and buffer offset
 \ TODO see if this should be closer to classical "*" variable
-: lc  ( -- )  lc0 @  bc @  + ; 
+: .lc  ( -- )  lc0 @  bc @  + ; 
 
-\ Save one byte in buffer memory area
-: b,  ( c -- )  buffer  bc @  +  c!  1 bc +! ; 
+\ Save one byte in buffer. Don't use C, because we are not in Dictionary
+: b,  ( c -- )  staging  bc @  +  c!  1 bc +! ; 
 
 \ Save one word in buffer memory area, convert to little-endian
 : w,  ( w -- )  swapbytes b, b, ; 
+
+\ Save ASCII character string provided by S" instruction 
+\ S, is reserved by gforth; note OVER + SWAP is BOUNDS in gforth 
+: str, ( addr u -- ) over + swap  ?do i c@ b, loop ; 
 
 
 \ -----------------------
@@ -41,18 +42,20 @@ variable bc  0 bc !  \ buffer counter, offset  TODO see if this should be TOS
 : .org  ( 65addr -- )  lc0 ! ; 
 
 \ mark end of assembler source text, return buffer location and size
-: .end  ( -- addr u )  buffer  bc @ ; 
+: .end  ( -- addr u )  staging  bc @ ; 
 
-\ set a variable TODO
-: .equ ." (NOT CODED YET)" ;
-
+\ set a variable 
+: .equ  ( u "name" -- ) ( -- u ) 
+   create ,
+   does> @ ; 
 
 \ -----------------------
 \ labels and branching 
 
 \ Set a label 
-: <l> ( "n" )  ." (NOT CODED YET)" ; 
-
+: .l ( "n" -- ) ( -- u ) 
+   create .lc ,
+   does> @ ; 
 
   
 \ -----------------------
@@ -74,7 +77,8 @@ variable bc  0 bc !  \ buffer counter, offset  TODO see if this should be TOS
 \ -----------------------
 \ one byte opcodes 
 
-00 1byte brk   08 1byte php   
+00 1byte brk   
+08 1byte php   
 0a 1byte asl 
 0ea 1byte nop  
 
@@ -92,6 +96,8 @@ variable bc  0 bc !  \ buffer counter, offset  TODO see if this should be TOS
 60 1byte rts   
 
 7a 1byte ply
+
+0aa 1byte tax
 
 0d8 1byte cld
 0da 1byte phx
@@ -131,6 +137,8 @@ variable bc  0 bc !  \ buffer counter, offset  TODO see if this should be TOS
 7c 3byte jmp.xi
 
 8d 3byte sta
+
+9d 3byte sta.x
 
 
    
