@@ -1,6 +1,6 @@
 \ Example assembly source file for the Übersquirrel 65c02 Assembler
 \ Scot W. Stevenson <scot.stevenson@gmail.com>
-\ This version: 10. Dec 2014
+\ This version: 12. Dec 2014
 
 \ Remember this is assembler source file is actually a Forth programm listing
 \ as far as Forth is concerned. As such, the file type should be .fs instead
@@ -15,25 +15,26 @@
         \ comments marked with .( will be printed during assembly
         cr .( Starting assembly ... )
 
-        \ .org sets target address on 65c02 machine
-        \ use leading zeros with hex numbers to make sure they are not seen
-        \ as words by the Forth interpreter 
+        \ .org sets target address on 65c02 machine. REQUIRED. 
+        \ use leading zeros with hex numbers to make double sure they are 
+        \ not interpreted as not interpreted words by Forth 
         0c000 .org      
 
         \ because this is actually a Forth file, we can put more than one 
         \ instruction in a row
         nop nop nop
 
-        \ instructions that have an operand put it before the opcode (the Forth
-        \ "reverse polish notation" (RPN) thing). See MANUAL.txt for syntax of
-        \ the various addressing modes
+        \ instructions that have an operand put it before the opcode (the 
+        \ Forth "reverse polish notation" (RPN) thing). See MANUAL.txt for 
+        \ the syntax of various addressing modes
           00 lda.#     \ conventional syntax: lda #$00
              tax
         1020 sta.x     \ conventional syntax: sta $1020,x
 
 
         \ store bytes with the B, assembler command, not the normal Forth C, 
-        \ instruction
+        \ instruction because they go in the staging area, not the Forth
+        \ dictionary
         0ff b, 0ff b, 0ff b,     
 
         \ store words in correct little-endian format with W,
@@ -41,7 +42,6 @@
 
         \ store strings with S" and STR, (S, is reserved by gforth) 
         s" cats are cool" str, 
-
 
         \ define variables with .EQU
         88 .equ cat
@@ -55,7 +55,7 @@
         cat havecat?  \ stores the "nice" string (of course) 
 
 
-        \ define labels with .L 
+        \ we define labels with .L 
         .l comehere 
 
         \ .LC gives us the current address being assembled (the "*"

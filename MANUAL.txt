@@ -1,7 +1,7 @@
 Manual for the Übersquirrel 65c02 Forth Assembler
 Scot W. Stevenson <scot.stevenson@gmail.com>
 First version: 07. Nov 2014 ("N7 Day")
-This version: 10. Dez 2014
+This version: 12. Dez 2014
 
 
 SERIOUSLY, WHY ANOTHER 65c02 ASSEMBLER?
@@ -19,16 +19,13 @@ SYNTAX
 
 Because we're dealing with Forth here, the format is slightly different. We start with the operand, followed by a special version of the opcode that includes the mode. For instance: 
 
-    lda #$ea        becomes           ea lda.#
     lda $1000       becomes         1000 lda 
 
 The new opcodes are orientated along the space between them. We call this adding a "postfix" to the opcode. The list of postfixes is:
 
     implied                   dex                    dex
-    accumulator               asl                    asl.a 
-
-    relative                  bne $01             01 bne (ALPHA)
-
+    accumulator               inc                    inc.a
+    relative                  bne $01           2000 bne      [see note]
     immediate                 lda #$00            00 lda.#
     absolute                  lda $1000         1000 lda
     absolute x indexed        lda $1000,x       1000 lda.x
@@ -39,26 +36,43 @@ The new opcodes are orientated along the space between them. We call this adding
     zero page x indexed       lda $00,x           00 lda.zx
     zero page y indexed       lda $00,y           00 lda.zy
     zero page indirect        lda ($10)           10 lda.zi   (65c02)
-    zp indirect x indexed     lda ($10,x)         10 lda.zxi  [sic]
-    zp indirect y indexed     lda ($10),y         10 lda.ziy  [sic]
+    zp indirect x indexed     lda ($10,x)         10 lda.zxi
+    zp indirect y indexed     lda ($10),y         10 lda.ziy
 
-Note we don't have to use "$", "%" or "#" for formats because we can use HEX, BINARY, and DECIMAL from normal Forth. As an example, we'll convert this small loop
+Note that the "i" (for "indirect") is put where the parenthesis is in normal notation (compare lda.zxi and lda.ziy for instance). The Branch instruction family is treated differently, because we assume that usually a label will be used instead of the actual offset. See below for a detailed discussion. Immediate addressing has keep the hash sign ("#") because it is a "lower case" special character and we avoid conflicts with the "i" (used for indirect modes).  
+
+Where Forth words conflict with the mnemonic, we have special cases which we solve by adding a dot to the opcode:
+
+    AND $1000     becomes       1000 and. 
+
+Note we don't have to use "$", "%" or "#" for the number formats because we can use HEX, BINARY, and DECIMAL from normal Forth. 
+
+
+LABELS, JUMPS AND BRANCHES
+
+Labels are prefixed with .l 
+
+
+EXAMPLE 
+
+
+As an example, we'll convert this small loop
 
                 lda #$00
                 tax
-        hierher
+        loop01
                 sta $1000,x
                 dex
-                bne hierher
+                bne loop01
 
 to Übersquirrel syntax:
 
              00 lda.#
                 tax
-   .l hierher
+   .l loop01
            1000 sta.x
                 dex
-        hierher bne   
+         loop01 bne   
 
 
 There are a few special cases. The assembler instruction "and" conflicts with the Forth AND, so it is coded and. (note dot at the end). 
