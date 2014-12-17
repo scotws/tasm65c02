@@ -1,7 +1,7 @@
 \ The Übersquirrel 65c02 Forth Cross-Assembler
 \ Scot W. Stevenson <scot.stevenson@gmail.com>
 \ First version: 7. Nov 2014 ("N7 Day")
-\ This version: 14. Dez 2014
+\ This version: 15. Dez 2014
 
 \ Written for gforth 0.7.0 
 
@@ -12,7 +12,7 @@ variable lc0  \ initial target address on 65c02 machine
 create staging 0ffff allot  \ 64k area to store assembled machine code
 staging 0ffff erase 
 
-variable bc  0 bc !  \ buffer counter, offset  TODO see if this should be TOS 
+variable bc  0 bc !  \ buffer counter, offset  
 
 : swapbytes ( u -- u u )  \ convert to little-endian format
    dup 0ff00 and  8 rshift   
@@ -49,11 +49,24 @@ variable bc  0 bc !  \ buffer counter, offset  TODO see if this should be TOS
    create ,
    does> @ ; 
 
-\ set a label 
+\ set an absolute label 
 : .l ( "n" -- ) ( -- u ) 
    create .lc ,
    does> @ ; 
 
+\ create an unresolved forward reference
+\ note that PARSE-NAME and FIND-NAME are specific to gforth 
+: l+  ( "name" -- ) 
+   parse-name 2dup find-name if 
+      evaluate else  \ if we have a label already, go with it
+      ." Not coded yet" 2drop then ; 
+
+\ save assembled program to file, overwriting any file with same name
+: .save ( addr u "name" -- )
+   parse-name w/o create-file
+   drop write-file if 
+      ." Error writing file" then ; 
+      
   
 \ -----------------------
 \ Handle conversion and storage depending on instruction size 
@@ -70,21 +83,24 @@ variable bc  0 bc !  \ buffer counter, offset  TODO see if this should be TOS
    create c,
    does> c@ b, w, ; 
 
-\ Handel branch instructions TODO
-\ BRANCH is reserved for Forth
+\ caclulate branch
+: makebranch ( w -- u ) 
+   .lc -  1-
+   dup branchable? if 
+      b, else
+      drop ." Error: Branch out of range" then ; 
+
+\ handel backward branch instructions 
+\ Note BRANCH is reserved for Forth
 : twig  ( opcode -- )  ( w -- ) 
    create c,
-   does> c@ b,  
-      .lc - 1-
-      dup branchable? if 
-         b, else
-         ." Error: Branch out of range" then ; 
+   does> c@ b, makebranch ; 
 
-\ Handle BBR instructions TODO
-: testbranch ( -- ) 
+\ handle BBR/BBS instructions 
+: testbranch ( opcode -- ) ( w u -- ) 
    create c,
-   does> ." Not coded yet!" ; 
-
+   does> c@ b, b, makebranch ; 
+   
 
 \ -----------------------
 

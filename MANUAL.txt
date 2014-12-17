@@ -1,13 +1,17 @@
 Manual for the Übersquirrel 65c02 Forth Assembler
 Scot W. Stevenson <scot.stevenson@gmail.com>
 First version: 07. Nov 2014 ("N7 Day")
-This version: 12. Dez 2014
+This version: 15. Dez 2014
 
 
 SERIOUSLY, WHY ANOTHER 65c02 ASSEMBLER?
 
 (Very good ones out there, for instance Ophis 2.0)
 (Want to write one in Forth for the practice and because I'm going to build a Forth machine)
+
+
+
+
 (I really, really don't like the syntax)
 (Older assemblers focused on small size)
 
@@ -79,6 +83,35 @@ There are a few special cases. The assembler instruction "and" conflicts with th
 
 
 ASSEMBLY
+
+The assembler is called by starting gforth. Then, run the assembler program:
+
+        INCLUDE asm65c02.fs
+
+Next, you run the source file:
+
+        INCLUDE example.fs
+
+If everything goes well, you should have no output other than what you instructed the assembler to produce. One thing to watch out for are "redefined" messages, because this usually means you have defined a label twice. After assembly, the stack will contain the address of the first assembled byte and the length of the code. DUMP will let you see a hex dump of the machine language program. 
+
+
+ASSEMBLER COMMANDS 
+
+The assembler commands are prefixed with a dot (for instance, ".l") in keeping with standard assembler terminology, though this conflicts with the Forth convention that such words print something to the screen. They are also all lowercase. 
+
+.END ( -- addr u ) 
+
+
+.EQU ( u "name" -- )
+
+
+.ORG ( u -- ) 
+
+
+.SAVE ( addr u "name" -- ) 
+
+Save the result of assembly to the name of the file given. If a file with the same name already exists, it is overwritten without warning. 
+
 
 
 SAVING THE OUTPUT

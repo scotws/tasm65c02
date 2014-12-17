@@ -1,6 +1,6 @@
 \ Example assembly source file for the Übersquirrel 65c02 Assembler
 \ Scot W. Stevenson <scot.stevenson@gmail.com>
-\ This version: 12. Dec 2014
+\ This version: 14. Dec 2014
 
 \ Remember this is assembler source file is actually a Forth programm listing
 \ as far as Forth is concerned. As such, the file type should be .fs instead
@@ -22,7 +22,7 @@
 
         \ because this is actually a Forth file, we can put more than one 
         \ instruction in a row
-        nop nop nop
+        nop nop 
 
         \ instructions that have an operand put it before the opcode (the 
         \ Forth "reverse polish notation" (RPN) thing). See MANUAL.txt for 
@@ -55,14 +55,35 @@
         cat havecat?  \ stores the "nice" string (of course) 
 
 
-        \ we define labels with .L 
-        .l comehere 
-
         \ .LC gives us the current address being assembled (the "*"
         \ of other assemblers). Use normal Forth math functions to 
         \ manipulate it
         .lc 2 +  jmp 
-        nop nop 
+                 nop 
+
+        \ we define labels with .L 
+        .l comehere 
+
+        \ backward jumps: just put the label (or absolute address) first
+        comehere jmp 
+                 nop
+
+        \ backward branches: work the same, becasuse they assume labels
+        \ (or absolute addresses) 
+        .l cat1
+                 nop 
+            cat1 bra
+                 nop 
+
+        \ if we want to enter the relative address by hand, we trick the
+        \ assembler by adding the offset to the current address (in bytes)
+                nop 
+        .lc 1-  bra 
+                nop 
+
+        \ forward branches are a pain, requiring special structres. 
+        \ HIER HIER TODO 
+
 
         brk 
 
@@ -74,3 +95,6 @@
 
         \ or have the machine print out the hex code at the end itself
         cr 2dup dump
+
+        \ uncomment next line to save the hex dump to the file "example.bin"
+        \ .save example.bin 
