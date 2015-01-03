@@ -1,7 +1,7 @@
 \ The Übersquirrel 65c02 Forth Cross-Assembler
 \ Scot W. Stevenson <scot.stevenson@gmail.com>
 \ First version: 7. Nov 2014 ("N7 Day")
-\ This version: 15. Dez 2014
+\ This version: 18. Dez 2014
 
 \ Written for gforth 0.7.0 
 
@@ -24,14 +24,14 @@ variable bc  0 bc !  \ buffer counter, offset
 \ Calculate location counter from target address and buffer offset
 : .lc  ( -- )  lc0 @  bc @  + ; 
 
-\ Save one byte in buffer. Don't use C, because we are not in Dictionary
+\ Save one byte in staging area
 : b,  ( c -- )  staging  bc @  +  c!  1 bc +! ; 
 
-\ Save one word in buffer memory area, convert to little-endian
+\ Save one word in staging area, converting to little-endian
 : w,  ( w -- )  swapbytes b, b, ; 
 
 \ Save ASCII character string provided by S" instruction 
-\ S, is reserved by gforth; note OVER + SWAP is also BOUNDS in gforth 
+\ S, is reserved by gforth. Note OVER + SWAP is also BOUNDS in gforth 
 : str, ( addr u -- )  over + swap  ?do i c@ b, loop ; 
 
 
@@ -44,19 +44,19 @@ variable bc  0 bc !  \ buffer counter, offset
 \ mark end of assembler source text, return buffer location and size
 : .end  ( -- addr u )  staging  bc @ ; 
 
-\ set a variable 
+\ set a variable (from Forth's point of view, a CONSTANT)
 : .equ  ( u "name" -- ) ( -- u ) 
    create ,
    does> @ ; 
 
-\ set an absolute label 
+\ set an absolute label TODO this is the primitive version 
 : .l ( "n" -- ) ( -- u ) 
    create .lc ,
    does> @ ; 
 
 \ create an unresolved forward reference
 \ note that PARSE-NAME and FIND-NAME are specific to gforth 
-: l+  ( "name" -- ) 
+: .l>  ( "name" -- ) 
    parse-name 2dup find-name if 
       evaluate else  \ if we have a label already, go with it
       ." Not coded yet" 2drop then ; 
