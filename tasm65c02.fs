@@ -44,11 +44,6 @@ variable bc  0 bc !  \ buffer counter, offset
 \ mark end of assembler source text, return buffer location and size
 : .end  ( -- addr u )  staging  bc @ ; 
 
-\ set a variable (from Forth's point of view, a CONSTANT)
-: .equ  ( u "name" -- ) ( -- u ) 
-   create ,
-   does> @ ; 
-
 \ set an absolute label TODO this is the primitive version 
 : .l ( "n" -- ) ( -- u ) 
    create .lc ,

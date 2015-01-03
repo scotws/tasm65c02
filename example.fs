@@ -44,8 +44,8 @@
         \ store strings with S" and STR, (S, is reserved by gforth) 
         s" cats are cool" str, 
 
-        \ define variables with .EQU
-        88 .equ cat
+        \ define variables with VALUE, because this is Forth
+        88 value cat
         cat lda.#
 
 

@@ -102,9 +102,6 @@ The assembler commands are prefixed with a dot (for instance, ".l") in keeping w
 .END ( -- addr u ) 
 
 
-.EQU ( u "name" -- )
-
-
 .ORG ( u -- ) 
 
 
@@ -120,6 +117,9 @@ SAVING THE OUTPUT
    drop .end rot
    write-file 
 
+
+
+Note we don't need a ".EQU" command because we can just use the VALUE built-in Forth command. 
 
 
 COPYRIGHT 
