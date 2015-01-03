@@ -1,9 +1,9 @@
-\ The Übersquirrel 65c02 Forth Cross-Assembler
+\ A Typist's 65c02 Assembler in Forth 
 \ Scot W. Stevenson <scot.stevenson@gmail.com>
-\ First version: 7. Nov 2014 ("N7 Day")
-\ This version: 18. Dez 2014
+\ First version: 07. Nov 2014 ("N7 Day")
+\ This version: 03. Jan 2015
 
-\ Written for gforth 0.7.0 
+\ Written with gforth 0.7.0 
 
 hex
 

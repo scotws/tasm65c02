@@ -1,7 +1,7 @@
-Manual for the Übersquirrel 65c02 Forth Assembler
+Manual for a Typist's 65c02 Assembler in Forth 
 Scot W. Stevenson <scot.stevenson@gmail.com>
 First version: 07. Nov 2014 ("N7 Day")
-This version: 15. Dez 2014
+This version: 03. Jan 2015
 
 
 SERIOUSLY, WHY ANOTHER 65c02 ASSEMBLER?
@@ -86,7 +86,7 @@ ASSEMBLY
 
 The assembler is called by starting gforth. Then, run the assembler program:
 
-        INCLUDE asm65c02.fs
+        INCLUDE tasm65c02.fs
 
 Next, you run the source file:
 

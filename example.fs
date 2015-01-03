@@ -1,12 +1,13 @@
-\ Example assembly source file for the Übersquirrel 65c02 Assembler
+\ Example assembly source file for 
+\ A Typist's 65c02 Assembler in Forth
 \ Scot W. Stevenson <scot.stevenson@gmail.com>
-\ This version: 14. Dec 2014
+\ This version: 03. Jan 2015
 
 \ Remember this is assembler source file is actually a Forth programm listing
 \ as far as Forth is concerned. As such, the file type should be .fs instead
 \ of .asm if you want correct syntax highlighting with an editor such as vi
 
-\ To test: Start gforth, INCLUDE asm65c02.fs, INCLUDE example.fs (this file)
+\ To test: Start gforth, INCLUDE tasm65c02.fs, INCLUDE example.fs (this file)
 
         \ we can use all the normal Forth commands; HEX should actually be 
         \ redundant
@@ -15,9 +16,9 @@
         \ comments marked with .( will be printed during assembly
         cr .( Starting assembly ... )
 
-        \ .org sets target address on 65c02 machine. REQUIRED. 
+        \ .org sets target address on 65c02 machine. This is REQUIRED. 
         \ use leading zeros with hex numbers to make double sure they are 
-        \ not interpreted as not interpreted words by Forth 
+        \ not interpreted as not interpreted as words by Forth 
         0c000 .org      
 
         \ because this is actually a Forth file, we can put more than one 
@@ -25,8 +26,8 @@
         nop nop 
 
         \ instructions that have an operand put it before the opcode (the 
-        \ Forth "reverse polish notation" (RPN) thing). See MANUAL.txt for 
-        \ the syntax of various addressing modes
+        \ Forth "reverse polish notation" (RPN) or "postfix" thing). See 
+        \ MANUAL.txt for the syntax of various addressing modes
           00 lda.#     \ conventional syntax: lda #$00
              tax
         1020 sta.x     \ conventional syntax: sta $1020,x
@@ -80,9 +81,6 @@
                 nop 
         .lc 1-  bra 
                 nop 
-
-        \ forward branches are a pain, requiring special structres. 
-        \ HIER HIER TODO 
 
 
         brk 
