@@ -1,8 +1,21 @@
 \ A Typist's 65c02 Assembler in Forth 
-\ Scot W. Stevenson <scot.stevenson@gmail.com>
-\ Written with gforth 0.7.0 
+\ Copyright 2015 Scot W. Stevenson <scot.stevenson@gmail.com>
+\ Written with gforth 0.7
 \ First version: 07. Nov 2014 ("N7 Day")
 \ This version: 05. Jan 2015
+
+\ This program is free software: you can redistribute it and/or modify
+\ it under the terms of the GNU General Public License as published by
+\ the Free Software Foundation, either version 3 of the License, or
+\ (at your option) any later version.
+
+\ This program is distributed in the hope that it will be useful,
+\ but WITHOUT ANY WARRANTY; without even the implied warranty of
+\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+\ GNU General Public License for more details.
+
+\ You should have received a copy of the GNU General Public License
+\ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 hex
 
@@ -20,7 +33,6 @@ variable bc  0 bc !  \ buffer counter, offset to start of staging area
 
 : branchable? ( n -- f ) \ make sure branch offset is the right size
    -80 7f within ;
-
 
 \ Calculate location counter from target address and buffer offset
 : lc  ( -- )  lc0 @  bc @  + ; 
