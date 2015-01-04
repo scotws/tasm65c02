@@ -2,7 +2,7 @@
 \ Scot W. Stevenson <scot.stevenson@gmail.com>
 \ Written with gforth 0.7.0 
 \ First version: 07. Nov 2014 ("N7 Day")
-\ This version: 03. Jan 2015
+\ This version: 04. Jan 2015
 
 hex
 
@@ -14,9 +14,7 @@ staging maxmemory erase
 
 variable bc  0 bc !  \ buffer counter, offset to start of staging area
 
-0ffff constant dummyaddr  \ placeholder for unresolved labels
-
-: swapbytes ( u -- u u )  \ convert to little-endian format
+: swapbytes ( u -- u u )  \ convert 16 bit address to little-endian format
    dup 0ff00 and  8 rshift   
    swap 0ff and ; 
 
@@ -25,7 +23,7 @@ variable bc  0 bc !  \ buffer counter, offset to start of staging area
 
 
 \ Calculate location counter from target address and buffer offset
-: .lc  ( -- )  lc0 @  bc @  + ; 
+: lc  ( -- )  lc0 @  bc @  + ; 
 
 \ Save one byte in staging area
 : b,  ( c -- )  staging  bc @  +  c!  1 bc +! ; 
@@ -35,7 +33,7 @@ variable bc  0 bc !  \ buffer counter, offset to start of staging area
 
 \ Save ASCII string provided by S" instruction (S, is reserved by gforth) 
 \ Note OVER + SWAP is also BOUNDS in gforth 
-: str, ( addr u -- )  over + swap  ?do i c@ b, loop ; 
+: str, ( addr u -- )  over + swap  ?do  i c@ b,  loop ; 
 
 
 \ -----------------------
@@ -45,8 +43,8 @@ variable bc  0 bc !  \ buffer counter, offset to start of staging area
 : .origin ( 65addr -- )  lc0 ! ; 
 
 \ move to a given address, filling the space inbetween with zeros
-\ TODO 
-: .advance ( 65addr -- ) ." (Not coded yet)" ; 
+: .advance ( 65addr -- ) 
+   ." Not coded yet." ;  \ TODO 
 
 \ mark end of assembler source text, return buffer location and size
 : .end  ( -- addr u )  staging  bc @ ; 
@@ -60,60 +58,107 @@ variable bc  0 bc !  \ buffer counter, offset to start of staging area
 \ -----------------------
 \ Labels 
 
-\ replace placeholder references in list of unresolved forward references
-\ with the real thing. Used by "->" for labels we have already used.
-: replacedummy  ( offset -- )
-   .lc swapbytes         ( offset 65addr-h 65addr-l ) 
+\ placeholder for unresolved ABSOLUTE labels (16 bit) 
+\ make this easy to spot on dumps for debugging
+0ffff constant dummyaddr  
+
+\ get current offset to start of staging area, adding one further byte 
+\ for the JSR/JMP/BRA opcode
+: bc+1  ( -- offset)  bc @ 1+ ; 
+
+\ replace dummy references to an ABSOLUTE address word in list of 
+\ unresolved forward references by JMP/JSR with the real address. 
+\ Used by "->" once we know what the actual address is 
+: addr>dummy  ( buffer-offset -- )
+   lc swapbytes         ( buffer-offset 65addr-h 65addr-l ) 
    rot  staging +  tuck  ( 65addr-h addr 65addr-l addr ) 
    c! char+ c! ; 
 
-\ Set an absolute label. Assumes that the user knows what he is doing and
+\ replace dummy references to an RELATIVE offset byte in list of 
+\ unresolved forward references by BRA with the real offset.  
+\ Used by "->" once we know what the actual address is 
+: rel>dummy  ( buffer-offset -- )
+   dup staging +     ( b-off addr ) 
+   bc @              ( b-off addr bc ) 
+   rot -  1-         ( addr 65off ) 
+
+   dup branchable? invert if
+      cr ." Offset out of branching range (" . ." )" then 
+
+   swap c! ; 
+
+\ Use a jump table to handle replacement of dummy values, which should make 
+\ it easier to add other addresing forms for other processors
+create replacedummy  ' rel>dummy ,  ' addr>dummy , 
+
+\ Handle forward unresolved references by either creating a new linked list
+\ of locations in the staging area where they need to be inserted later, or
+\ by adding a new entry to the list. This is a common routine for both 
+\ absolute ("J>") and relative ("B>") forward references, which add
+\ their own offsets to the dummy replacement jump table and provide different
+\ dummy addresses for the following instructions (JSR/JMP and BRA 
+\ respectively). 
+: addlabel  ( "name" -- ) 
+   parse-name 2dup find-name    ( addr u nt|0 )
+   dup if
+      \ address in use, add another entry to the list 
+      name>int    ( addr u xt )  \ gforth uses "name token" (nt), need xt
+      >body       ( addr u l-addr ) 
+      bc+1  swap  ( addr u offset l-addr ) 
+      dup @       ( addr u offset l-addr old ) 
+      swap here   ( addr u offset old l-addr here ) 
+      swap !      ( addr u offset old )
+      , ,         ( addr u )  \ save link to previous entry and data
+      2drop       \ we didn't need name string after all
+   else 
+     \ new name, create new list. NEXTNAME is specific to 
+     \ gforth and provides a string for a defining word such as CREATE
+     drop nextname create 0 , bc+1 , 
+   then ; 
+ 
+\ Create an unresolved ABSOLUTE forward label reference (for jumps)
+: j> ( "name" -- addr )
+   addlabel 
+   cell ,        \ save cell size as offset to replacement jump table
+   dummyaddr ;
+
+\ Create an unresolved RELATIVE forward label reference (for branches) 
+: b>  ( "name" -- addr )  
+   addlabel 
+   0 ,           \ save zero as offset to replacement jump table 
+   lc ;         \ use lc as dummy so we stay inside branch range 
+
+\ Define a label. Assume that the user knows what they are doing and
 \ doesn't try to name label twice. If there were unresolved forward 
-\ references, resolve them here and replace old label with new one
-\ Yes, "-->" would be easer to read, but is used by old block syntax
-: ->  ( "name" -- ) ( -- u ) 
-   parse-name 2dup find-name    ( addr u nt|f )
+\ references, resolve them here and replace complicated label handling
+\ routine with simple new one. Yes, "-->" would be easer to read, but it 
+\ is used by old block syntax
+: ->  ( "name" -- )
+   parse-name 2dup find-name    ( addr u nt|0 )
 
    \ if we have already used that name, it must be an unresolved 
-   \ forward reference. So we first replace the dummy references 
-   \ with the real deal we just learned right this moment
+   \ forward reference. Now we can replace the dummy values we have been 
+   \ using with the real stuff based on the linked list of addresses we've 
+   \ been building 
    dup if      
-      name>int    ( addr u xt )  \ convert gforth "name token" nt to xt
+      name>int    ( addr u xt )  \ gforth uses "name token" (nt), need xt
       >body       ( addr u l-addr ) 
+
+      \ walk through the list and replace dummy addresses and offsets
       begin
          dup      ( addr u l-addr l-addr ) 
       while 
-         dup cell+ @  ( addr u l-addr data ) 
-         replacedummy ( addr u l-addr ) 
-         @            ( addr u next-l-addr ) 
+         dup cell+ @         ( addr u l-addr data ) 
+         over 2 cells +  @   ( addr u l-addr data cell|0 ) 
+         replacedummy + @  execute
+         @                   ( addr u next-l-addr ) 
       repeat 
+
    then       ( addr u ) 
 
-   \ (re)define the label. Note that NEXTNAME is specific to gforth 
-   \ and provides a string for defining a word
-   drop nextname create .lc , 
+   \ (re)define the label
+   drop nextname create lc , 
       does> @ ; 
-
-\ Create an unresolved ABSOLUTE forward label reference (for jumps)
-\ Assumes we have not defined this label before
-: j> ( "name" -- ) ( -- ) 
-   \ Start simple linked list by adding 0 as marker for last element,
-   \ the current offset as the location of the jump (plus one byte for the
-   \ opcode) and put a dummy value on the stack for the following 
-   \ JMP/JSR instruction to process
-   create 0 , bc @ 1+ , dummyaddr
-   does> bc @ 1+  swap ( bc addr )
-      dup @            ( bc addr old )
-      swap here        ( bc old addr here ) 
-      swap !           ( bc old )           \ save link to head of list
-      , ,            \ save link to previous entry and new data
-      dummyaddr ;    \ put dummy value on stack for following JMP/JSR
-
-
-\ Create an unresolved RELATIVE forward label reference (for branches) 
-\ Assumes we have not defined this label before
-\ TODO 
-: b>  ( "name" -- )  ." Not coded yet" ; 
 
 \ DEBUGGING: Print entries in simple linked list when given xt of list
 \ TODO remove this code but put in manual for testing 
@@ -122,7 +167,9 @@ variable bc  0 bc !  \ buffer counter, offset to start of staging area
    begin
       dup
    while
-      dup cell+ @ . 
+      dup cell+ @ .       \ print data
+      dup 2 cells +  @
+      if ." (jump) " else ." (branch) " then
       @
    repeat
    drop ; 
@@ -145,7 +192,7 @@ variable bc  0 bc !  \ buffer counter, offset to start of staging area
 
 \ caclulate branch
 : makebranch ( w -- u ) 
-   .lc -  1-
+   lc -  1-
    dup branchable? if 
       b, else
       drop ." Error: Branch out of range" then ; 
@@ -261,4 +308,3 @@ variable bc  0 bc !  \ buffer counter, offset to start of staging area
                   0fd 3byte sbc.x    0fe 3byte inc.x    0ff testbranch bbs7
 
 \ END
-\ -----------------------

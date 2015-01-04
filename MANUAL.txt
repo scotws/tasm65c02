@@ -1,7 +1,7 @@
 Manual for a Typist's 65c02 Assembler in Forth 
 Scot W. Stevenson <scot.stevenson@gmail.com>
 First version: 07. Nov 2014 ("N7 Day")
-This version: 03. Jan 2015
+This version: 04. Jan 2015
 
 
 SERIOUSLY, WHY ANOTHER 65c02 ASSEMBLER?
@@ -54,7 +54,7 @@ Note we don't have to use "$", "%" or "#" for the number formats because we can 
 
 LABELS, JUMPS AND BRANCHES
 
-Labels are prefixed with .l 
+Labels are prefixed with -> 
 
 
 EXAMPLE 
@@ -73,7 +73,7 @@ to Übersquirrel syntax:
 
              00 lda.#
                 tax
-   .l loop01
+   -> loop01
            1000 sta.x
                 dex
          loop01 bne   
@@ -116,6 +116,7 @@ LABELS
 
 
 J> 
+B> 
 
 
 
