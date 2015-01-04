@@ -4,137 +4,185 @@ First version: 07. Nov 2014 ("N7 Day")
 This version: 04. Jan 2015
 
 
-SERIOUSLY, WHY ANOTHER 65c02 ASSEMBLER?
+SERIOUSLY, WHY?
 
-(Very good ones out there, for instance Ophis 2.0)
-(Want to write one in Forth for the practice and because I'm going to build a Forth machine)
-
+Forth is a fantastic language to write assemblers in -- 
 
 
+WAIT DUDE, WHAT'S FORTH?
 
-(I really, really don't like the syntax)
-(Older assemblers focused on small size)
-
-
-BUT WHY FORTH?
+Forth is usually classed with the programming languages, though it's actually more an environment to create tailor-made programming languages in. An introduction to Forth is outside the scope of this document, see https://en.wikipedia.org/wiki/Forth_(programming_language) for general background and "Thinking Forth" by Leo Brodie (http://thinking-forth.sourceforge.net/) for an in-depth discussion. Anway, people kept telling me it was a fantastic language to write assemblers in, so I decided to see if was as easy as they kept saying.
 
 
-SYNTAX
+HASN'T THAT BEEN DONE BEFORE?
 
-Because we're dealing with Forth here, the format is slightly different. We start with the operand, followed by a special version of the opcode that includes the mode. For instance: 
+There are all kinds of great assemblers for the 6502/65c02 microprocessor out there -- see http://www.6502.org/tools/ for a list. However, the Forth assemblers available are usually old (some even pre-ANSI Forth, listed in "screens") and focused on a minimal memory footprint. The result is usually an instruction format that can be downright bizarre. Take this snippet from "A Forth Assembler for the 6502" by William Raqsdale as published in Vol 3, Issue 5 of "Forth Dimensions" (1982, http://www.forth.org/fd/FD-V03N5.pdf): 
 
-    lda $1000       becomes         1000 lda 
+                A ROL,
+             1 11 LDY,
+          DATA ,X STA,
+          DATA ,Y CMP,
+             6 X) ADC,
+         POINT )Y STA,
+         VECTOR ) JMP,
 
-The new opcodes are orientated along the space between them. We call this adding a "postfix" to the opcode. The list of postfixes is:
+This is hard to read, with up to two operands, and contains weirdness such as brackets that close but never open or those commas come before a letter, not after it. Other formats are slightly better, some are slightly worse. Having said that, I never really liked the standard assembler syntax for the 6502 with all the special characters like "$" and "(" and such, simply because I'm a ten-finger typest and any special character slows me down because I have to use the SHIFT-key. Also, I wanted an assembler that offers normal labels, while some Forth assemblers tell you to suck it up and use structured programming. 
+
+
+WHAT IS DIFFERENT ABOUT THIS ASSEMBLER? 
+
+First, it's technically a cross-assembler unless you find a way to run gforth on a 65c02 (probably not impossible).
+
+        - it is written in "modern" ANSI-orientated Forth (gforth 7.2) 
+        - the syntax ("Typist's Assembler Format") is optimized for ten-finger-typing
+        - it has true labels
+        - simple, brute-force structure make it easy to adapt to other processors
+
+"Brute-force" means that Typist's Forth doesn't worry about its memory footprint (it was developed on an Intel Devil's Core 4 GHz CPU with 16 GB of RAM). Still, when stripped of its gross-overcommenting, it is smaller than 8 KB in size. 
+
+
+SO LET'S SEE THIS NEW SYNTAX OF YOURS
+
+Like all Forth, we use postfix notation (aka "ass-backwards"). We start with the operand, followed by a special version of the opcode that includes the mode as part of the opcode that follows a dot (called the opcode's "tail" to avoid confusion with "postfix" and such). For instance: 
+
+    lda $10       becomes         10 lda.z    
+
+The new opcodes are orientated along the space between them and the operand. Note we don't have to use "$", "%" or "#" for the number 
+formats because we can use HEX, BINARY, and DECIMAL from normal Forth. The complete list for the 65c02 is: 
 
     implied                   dex                    dex
     accumulator               inc                    inc.a
-    relative                  bne $01           2000 bne      [see note]
-    immediate                 lda #$00            00 lda.#
     absolute                  lda $1000         1000 lda
+    immediate                 lda #$00            00 lda.#
     absolute x indexed        lda $1000,x       1000 lda.x
     absolute y indexed        lda $1000,y       1000 lda.y
     absolute indirect         jmp ($1000)       1000 jmp.i
     indexed indirect          jmp ($1000,x)     1000 jmp.xi   (65c02)
     zero page                 lda $10             10 lda.z
-    zero page x indexed       lda $00,x           00 lda.zx
-    zero page y indexed       lda $00,y           00 lda.zy
+    zero page x indexed       lda $10,x           10 lda.zx
+    zero page y indexed       lda $10,y           10 lda.zy
     zero page indirect        lda ($10)           10 lda.zi   (65c02)
     zp indirect x indexed     lda ($10,x)         10 lda.zxi
     zp indirect y indexed     lda ($10),y         10 lda.ziy
+    relative                  bne $2000         2000 bne      [see note]
 
-Note that the "i" (for "indirect") is put where the parenthesis is in normal notation (compare lda.zxi and lda.ziy for instance). The Branch instruction family is treated differently, because we assume that usually a label will be used instead of the actual offset. See below for a detailed discussion. Immediate addressing has keep the hash sign ("#") because it is a "lower case" special character and we avoid conflicts with the "i" (used for indirect modes).  
-
-Where Forth words conflict with the mnemonic, we have special cases which we solve by adding a dot to the opcode:
+Note that the "i" (for "indirect") is put where the parenthesis is in normal notation (compare lda.zxi and lda.ziy). The Branch instruction family is treated differently, because we assume that usually a label will usually be used instead of the actual offset. Immediate addressing has keep the hash sign ("#") because it is a "lower case" special character and we avoid conflicts with the "i" used for indirect mode. Where Forth words conflict with the opcodes, we add a dot to the opcode, but no real tail. 
 
     AND $1000     becomes       1000 and. 
 
-Note we don't have to use "$", "%" or "#" for the number formats because we can use HEX, BINARY, and DECIMAL from normal Forth. 
+When the assembler is expanded to the 65816, new tails will be required for the new modes. Anyway, a small example: 
+
+              lda #$00                        00 lda.#
+              tax                                tax
+    loop1:                        -> loop1
+              sta $1000,x                   1000 sta.x
+              dex                                dex
+              bne loop1                    loop1 bne
+
+See the file example.fs for the commented version of a complete program listing. Note that the syntax is all lower case and only upper case in the descriptions here to make it more readable. 
+
 
 
 LABELS, JUMPS AND BRANCHES
 
-Labels are prefixed with -> 
+As you can tell from the last exampel, labels are prefixed with "->" ("-->" would have been easier to read but it's used in anchient Forths as part of the BLOCK commands). Once a label is defined, you can just use it for backwards jumps, branches and references. When chosing a loop label name, remember that LOOP is already taken by Forth itself, as are REPEAT, BEGIN, and AGAIN. 
+   
+        -> frog  
+                      nop
+                 frog bra
+                 frog jmp
 
+Forward branches are a bit more complicated, because internally the assembler has to create a list of unresolved references until the location of the label is known ("single-pass assembler"). We deal with this by putting a special instruction at the start of the lines with forward references: "J>" for jumps (absolute addressing) and "B>" for branches (relative addressing). 
 
-EXAMPLE 
+              j> frog jsr 
+                      nop
+              j> frog jsr 
+                      nop
+              b> dogs bra
+                      nop
+        -> dogs
+                      brk 
+        -> frog 
+                      inc
+                      rts
 
+Once the label is defined, we can just access it without any special labels. 
 
-As an example, we'll convert this small loop
-
-                lda #$00
-                tax
-        loop01
-                sta $1000,x
-                dex
-                bne loop01
-
-to Übersquirrel syntax:
-
-             00 lda.#
-                tax
-   -> loop01
-           1000 sta.x
-                dex
-         loop01 bne   
-
-
-There are a few special cases. The assembler instruction "and" conflicts with the Forth AND, so it is coded and. (note dot at the end). 
-
-
-ASSEMBLY
-
-The assembler is called by starting gforth. Then, run the assembler program:
-
-        INCLUDE tasm65c02.fs
-
-Next, you run the source file:
-
-        INCLUDE example.fs
-
-If everything goes well, you should have no output other than what you instructed the assembler to produce. One thing to watch out for are "redefined" messages, because this usually means you have defined a label twice. After assembly, the stack will contain the address of the first assembled byte and the length of the code. DUMP will let you see a hex dump of the machine language program. 
 
 
 ASSEMBLER COMMANDS 
 
-The assembler commands are prefixed with a dot (for instance, ".l") in keeping with standard assembler terminology, though this conflicts with the Forth convention that such words print something. They are also all lowercase, and just given here in uppercase to make them easier to read. 
+Since this is Forth, you start out with the complete set of Forth commands you can use in the assembler program. As such, comments are marked by a "\" which comments out everything to the end of the line (";" with conventional assemblers) and anything in round brackets.
 
-.END ( -- addr u ) 
+              00 lda.z   ( this is a comment ) 
+              00 lda.z   \ so is this 
 
+In keeping with Forth conventions, assembler commands are not prefixed with with a dot -- in Forth, these are words that print something to the screen. 
 
-.ORIGIN ( 65addr -- ) 
+    ORIGIN ( 65addr -- ) Tells the assembler where to start compilation in the 65c02's address space. This word is required. 
 
+    B, ( u -- ) Store one byte in memory. Note this can be use with Forth LOOPs etc.
 
-.SAVE ( addr u "name" -- ) 
+    W, ( u -- ) Store one word (16 bit) in memory in correct little-endian format. 
 
-Save the result of assembly to the name of the file given. If a file with the same name already exists, it is overwritten without warning. 
+    STR, ( addr u -- ) Store a ASCII string in memory. Use with S" STRING". Note that gforth uses S, so we can't. 
+ 
+    ADVANCE ( 65addr -- ) Continue assembly at the address given, filling everything between here and there with zeros.
 
+    END ( -- addr u ) End assembly, returning the address in Forth's memory where the first assembled instruction was saved and
+        the length of the binary file. Use command such as DUMP to print it to the screen. 
 
-LABELS
+    SAVE ( addr u "name" -- ) Following END, save the binary output to the file given. Note this will brutally overwrite existing file
+        withouth warning. 
 
--> 
-
-
-J> 
-B> 
-
-
-
-SAVING THE OUTPUT
-
-   s" filename.bin" w/o create-file 
-   drop .end rot
-   write-file 
+Note we don't need a ".EQU" command because we just use the VALUE built-in Forth command. 
 
 
-ASSEMBLER COMMANDS NOT USED
+CALLING THE ASSEMBLER
 
-We don't need a ".EQU" command because we can just use the VALUE built-in Forth command. 
+Start gforth. Then, INCLUDE the assembler: 
+
+        include tasm65c02.fs
+
+Do the same with your source file, in this case example.fs
+
+        include example.fs
+
+
+ANYTHING ELSE?
+
+The assembler uses single, unsorted linked lists to deal with unresolved forward references. Use the following routine to print the contents of these list during debugging. 
+
+\ Print entries in simple linked list when given xt of list
+: dumplabellist ( xt -- ) 
+   >body
+   begin
+      dup
+   while
+      dup cell+ @ .       \ print data
+      dup 2 cells +  @    \ print type of link
+          if ." (jump) " else ." (branch) " then
+      @
+   repeat
+   drop ; 
+ 
+
+
+LINKS 
+
+- For all things to do with the 6502/65c02/65816, see http://www.6502.org/
+
+- Backgrounder on assemblers: "Assemblers And Loaders" by David Salomon (1993). Available as free PDF from 
+  http://www.davidsalomon.name/assem.advertis/AssemAd.html
+
+- Brad Rodriguez has published a series of articles on how to write your own assembler in Forth which were invaluable for this project. See those and other writings on Forth at http://www.bradrodriguez.com/papers/
+
+- "Freedom of Assembly" Julian V. Noble (2001) about the why Forth is great for assembly programming 
+  http://galileo.phys.virginia.edu/classes/551.jvn.fall01/asmcise2.pdf
+
 
 
 COPYRIGHT 
 
-
-CREDITS
 
 

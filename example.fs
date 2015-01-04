@@ -1,14 +1,14 @@
 \ Example assembly source file for 
 \ A Typist's 65c02 Assembler in Forth
 \ Scot W. Stevenson <scot.stevenson@gmail.com>
-\ This version: 03. Jan 2015
+\ This version: 04. Jan 2015
 
 \ Remember this is assembler source file is actually a Forth programm listing
 \ as far as Forth is concerned. As such, the file type should be .fs instead
 \ of .asm if you want correct syntax highlighting with an editor such as vi
 
-\ To test: Start gforth, INCLUDE tasm65c02.fs, INCLUDE example.fs (this file)
-\ Do not try to run the resulting code, which contains infinite loops!
+\ To test assembly: Start gforth, then INCLUDE tasm65c02.fs, INCLUDE example.fs
+\ However, do not try to run the resulting code, which contains infinite loops!
 
         \ we can use all the normal Forth commands; HEX should actually be 
         \ redundant
@@ -20,7 +20,7 @@
         \ .origin sets target address on 65c02 machine. This is REQUIRED. 
         \ use leading zeros with hex numbers to make double sure they are 
         \ not interpreted as words by Forth 
-        0c000 .origin
+        0c000 origin
 
         \ because this is actually a Forth file, we can put more than one 
         \ instruction in a row
@@ -67,7 +67,7 @@
         \ .LC gives us the current address being assembled (the "*"
         \ of other assemblers). Use normal Forth math functions to 
         \ manipulate it
-        .lc 2 +  jmp 
+        lc 2 +   jmp 
                  nop 
 
         \ we define labels with "->" (yes, "-->" would be easier to read, 
@@ -82,39 +82,37 @@
 
         \ backward branches: work the same, because branch instructions 
         \ assume they will be handed either absolute addresses or labels 
-                 
           hither bra
 
         \ if we want to enter the relative address by hand, we trick the
         \ assembler by adding the offset in bytes to the current address
         \ (note this might warrent a separate word in future)
                  nop 
-        .lc 1-   bra 
+        lc 1-    bra 
 
         \ forward jumps are a pain in the rear for single-pass assemblers
-        \ (which is what this is). The first (and only the first) reference
-        \ needs the special command J>
+        \ (which is what this is). We deal with this by having all forward
+        \ jumps prefixed with "J>" 
         j>  frog jsr
 
-        \ any subsequent references work without this extra command
-                 nop 
-            frog jsr 
+        \ the same is true with all forward branches, we use "B>"
+        b>  frog bne
 
-        \ we define the label we were referencing in the normal way and
-        \ use it normally later as well
+        \ once we have defined the label, we can go back to using normal
+        \ links as above
         -> frog
-                 nop
-            frog bra 
+             0ff lda.# 
+              00 sta.z 
+            frog bra
 
         \ well, enough of this 
                  brk 
-
 
         \ more comments printed to the screen
         .( all done.) cr 
 
         \ end assembly, put buffer address and length of compiled machine 
-        .end            
+        end            
 
         \ or have the machine print out the hex code at the end itself
         cr 2dup dump

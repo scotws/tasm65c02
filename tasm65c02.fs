@@ -40,17 +40,17 @@ variable bc  0 bc !  \ buffer counter, offset to start of staging area
 \ High level assembler instructions
 
 \ set intial target address on 65c02 machine
-: .origin ( 65addr -- )  lc0 ! ; 
+: origin ( 65addr -- )  lc0 ! ; 
 
 \ move to a given address, filling the space inbetween with zeros
-: .advance ( 65addr -- ) 
+: advance ( 65addr -- ) 
    ." Not coded yet." ;  \ TODO 
 
 \ mark end of assembler source text, return buffer location and size
-: .end  ( -- addr u )  staging  bc @ ; 
+: end  ( -- addr u )  staging  bc @ ; 
 
 \ save assembled program to file, overwriting any file with same name
-: .save ( addr u "name" -- )
+: save ( addr u "name" -- )
    parse-name w/o create-file
    drop write-file if 
       ." Error writing file" then ; 
