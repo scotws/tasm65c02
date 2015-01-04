@@ -97,17 +97,25 @@ If everything goes well, you should have no output other than what you instructe
 
 ASSEMBLER COMMANDS 
 
-The assembler commands are prefixed with a dot (for instance, ".l") in keeping with standard assembler terminology, though this conflicts with the Forth convention that such words print something to the screen. They are also all lowercase. 
+The assembler commands are prefixed with a dot (for instance, ".l") in keeping with standard assembler terminology, though this conflicts with the Forth convention that such words print something. They are also all lowercase, and just given here in uppercase to make them easier to read. 
 
 .END ( -- addr u ) 
 
 
-.ORG ( u -- ) 
+.ORIGIN ( 65addr -- ) 
 
 
 .SAVE ( addr u "name" -- ) 
 
 Save the result of assembly to the name of the file given. If a file with the same name already exists, it is overwritten without warning. 
+
+
+LABELS
+
+-> 
+
+
+J> 
 
 
 
@@ -118,8 +126,9 @@ SAVING THE OUTPUT
    write-file 
 
 
+ASSEMBLER COMMANDS NOT USED
 
-Note we don't need a ".EQU" command because we can just use the VALUE built-in Forth command. 
+We don't need a ".EQU" command because we can just use the VALUE built-in Forth command. 
 
 
 COPYRIGHT 

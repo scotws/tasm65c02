@@ -1,18 +1,20 @@
 \ A Typist's 65c02 Assembler in Forth 
 \ Scot W. Stevenson <scot.stevenson@gmail.com>
+\ Written with gforth 0.7.0 
 \ First version: 07. Nov 2014 ("N7 Day")
 \ This version: 03. Jan 2015
-
-\ Written with gforth 0.7.0 
 
 hex
 
 variable lc0  \ initial target address on 65c02 machine
 
-create staging 0ffff allot  \ 64k area to store assembled machine code
-staging 0ffff erase 
+0ffff 1+ constant maxmemory     \ 65c02 has 16 bit address space 
+create staging maxmemory allot  \ buffer to store assembled machine code
+staging maxmemory erase 
 
-variable bc  0 bc !  \ buffer counter, offset  
+variable bc  0 bc !  \ buffer counter, offset to start of staging area
+
+0ffff constant dummyaddr  \ placeholder for unresolved labels
 
 : swapbytes ( u -- u u )  \ convert to little-endian format
    dup 0ff00 and  8 rshift   
@@ -20,6 +22,7 @@ variable bc  0 bc !  \ buffer counter, offset
 
 : branchable? ( n -- f ) \ make sure branch offset is the right size
    -80 7f within ;
+
 
 \ Calculate location counter from target address and buffer offset
 : .lc  ( -- )  lc0 @  bc @  + ; 
@@ -30,38 +33,100 @@ variable bc  0 bc !  \ buffer counter, offset
 \ Save one word in staging area, converting to little-endian
 : w,  ( w -- )  swapbytes b, b, ; 
 
-\ Save ASCII character string provided by S" instruction 
-\ S, is reserved by gforth. Note OVER + SWAP is also BOUNDS in gforth 
+\ Save ASCII string provided by S" instruction (S, is reserved by gforth) 
+\ Note OVER + SWAP is also BOUNDS in gforth 
 : str, ( addr u -- )  over + swap  ?do i c@ b, loop ; 
 
 
 \ -----------------------
-\ assembler instructions
+\ High level assembler instructions
 
 \ set intial target address on 65c02 machine
-: .org  ( 65addr -- )  lc0 ! ; 
+: .origin ( 65addr -- )  lc0 ! ; 
+
+\ move to a given address, filling the space inbetween with zeros
+\ TODO 
+: .advance ( 65addr -- ) ." (Not coded yet)" ; 
 
 \ mark end of assembler source text, return buffer location and size
 : .end  ( -- addr u )  staging  bc @ ; 
-
-\ set an absolute label TODO this is the primitive version 
-: .l ( "n" -- ) ( -- u ) 
-   create .lc ,
-   does> @ ; 
-
-\ create an unresolved forward reference
-\ note that PARSE-NAME and FIND-NAME are specific to gforth 
-: .l>  ( "name" -- ) 
-   parse-name 2dup find-name if 
-      evaluate else  \ if we have a label already, go with it
-      ." Not coded yet" 2drop then ; 
 
 \ save assembled program to file, overwriting any file with same name
 : .save ( addr u "name" -- )
    parse-name w/o create-file
    drop write-file if 
       ." Error writing file" then ; 
-      
+
+\ -----------------------
+\ Labels 
+
+\ replace placeholder references in list of unresolved forward references
+\ with the real thing. Used by "->" for labels we have already used.
+: replacedummy  ( offset -- )
+   .lc swapbytes         ( offset 65addr-h 65addr-l ) 
+   rot  staging +  tuck  ( 65addr-h addr 65addr-l addr ) 
+   c! char+ c! ; 
+
+\ Set an absolute label. Assumes that the user knows what he is doing and
+\ doesn't try to name label twice. If there were unresolved forward 
+\ references, resolve them here and replace old label with new one
+\ Yes, "-->" would be easer to read, but is used by old block syntax
+: ->  ( "name" -- ) ( -- u ) 
+   parse-name 2dup find-name    ( addr u nt|f )
+
+   \ if we have already used that name, it must be an unresolved 
+   \ forward reference. So we first replace the dummy references 
+   \ with the real deal we just learned right this moment
+   dup if      
+      name>int    ( addr u xt )  \ convert gforth "name token" nt to xt
+      >body       ( addr u l-addr ) 
+      begin
+         dup      ( addr u l-addr l-addr ) 
+      while 
+         dup cell+ @  ( addr u l-addr data ) 
+         replacedummy ( addr u l-addr ) 
+         @            ( addr u next-l-addr ) 
+      repeat 
+   then       ( addr u ) 
+
+   \ (re)define the label. Note that NEXTNAME is specific to gforth 
+   \ and provides a string for defining a word
+   drop nextname create .lc , 
+      does> @ ; 
+
+\ Create an unresolved ABSOLUTE forward label reference (for jumps)
+\ Assumes we have not defined this label before
+: j> ( "name" -- ) ( -- ) 
+   \ Start simple linked list by adding 0 as marker for last element,
+   \ the current offset as the location of the jump (plus one byte for the
+   \ opcode) and put a dummy value on the stack for the following 
+   \ JMP/JSR instruction to process
+   create 0 , bc @ 1+ , dummyaddr
+   does> bc @ 1+  swap ( bc addr )
+      dup @            ( bc addr old )
+      swap here        ( bc old addr here ) 
+      swap !           ( bc old )           \ save link to head of list
+      , ,            \ save link to previous entry and new data
+      dummyaddr ;    \ put dummy value on stack for following JMP/JSR
+
+
+\ Create an unresolved RELATIVE forward label reference (for branches) 
+\ Assumes we have not defined this label before
+\ TODO 
+: b>  ( "name" -- )  ." Not coded yet" ; 
+
+\ DEBUGGING: Print entries in simple linked list when given xt of list
+\ TODO remove this code but put in manual for testing 
+: dumplabellist ( xt -- ) 
+   >body
+   begin
+      dup
+   while
+      dup cell+ @ . 
+      @
+   repeat
+   drop ; 
+     
   
 \ -----------------------
 \ Handle conversion and storage depending on instruction size 
