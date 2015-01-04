@@ -2,7 +2,7 @@
 \ Scot W. Stevenson <scot.stevenson@gmail.com>
 \ Written with gforth 0.7.0 
 \ First version: 07. Nov 2014 ("N7 Day")
-\ This version: 04. Jan 2015
+\ This version: 05. Jan 2015
 
 hex
 
@@ -44,7 +44,10 @@ variable bc  0 bc !  \ buffer counter, offset to start of staging area
 
 \ move to a given address, filling the space inbetween with zeros
 : advance ( 65addr -- ) 
-   ." Not coded yet." ;  \ TODO 
+   staging bc @ +  ( 65addr addr )
+   over lc -       ( 65addr addr u ) 
+   erase           ( 65addr )
+   lc0 @ -  bc ! ;
 
 \ mark end of assembler source text, return buffer location and size
 : end  ( -- addr u )  staging  bc @ ; 
@@ -160,20 +163,6 @@ create replacedummy  ' rel>dummy ,  ' addr>dummy ,
    drop nextname create lc , 
       does> @ ; 
 
-\ DEBUGGING: Print entries in simple linked list when given xt of list
-\ TODO remove this code but put in manual for testing 
-: dumplabellist ( xt -- ) 
-   >body
-   begin
-      dup
-   while
-      dup cell+ @ .       \ print data
-      dup 2 cells +  @
-      if ." (jump) " else ." (branch) " then
-      @
-   repeat
-   drop ; 
-     
   
 \ -----------------------
 \ Handle conversion and storage depending on instruction size 
