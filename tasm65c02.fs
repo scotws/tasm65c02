@@ -2,7 +2,7 @@
 \ Copyright 2015 Scot W. Stevenson <scot.stevenson@gmail.com>
 \ Written with gforth 0.7
 \ First version: 07. Nov 2014 ("N7 Day")
-\ This version: 05. Jan 2015
+\ This version: 06. Jan 2015 (BETA 0.1) 
 
 \ This program is free software: you can redistribute it and/or modify
 \ it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ variable bc  0 bc !  \ buffer counter, offset to start of staging area
 : str0, ( addr u -- ) str, 0 b, ; 
 
 \ Save linefeed-terminated  ASCII string provided by S" instruction
-: strLF, ( addr u -- ) str, 0a b, ; 
+: strlf, ( addr u -- ) str, 0a b, ; 
 
 \ -----------------------
 \ HIGH LEVEL ASSEMBLER INSTRUCTIONS
@@ -142,15 +142,14 @@ create replacedummy
 
 \ Handle forward unresolved references by either creating a new linked list
 \ of locations in the staging area where they need to be inserted later, or
-\ by adding a new entry to the list. This is a common routine for both 
-\ absolute ("J>") and relative ("B>") forward references, which add
-\ their own offsets to the dummy replacement jump table and provide different
-\ dummy addresses for the following instructions (JSR/JMP and BRA 
-\ respectively). 
+\ by adding a new entry to the list. This is a common routine for all 
+\ forward references, which add their own offsets to the dummy replacement 
+\ jump table and provide different dummy addresses for the following 
+\ instructions (JSR/JMP, BRA, MSB>, LSB> etc)
 : addlabel  ( "name" -- ) 
    parse-name 2dup find-name    ( addr u nt|0 )
    dup if
-      \ address in use, add another entry to the list 
+      \ address already defined, add another entry to the list 
       name>int    ( addr u xt )  \ gforth uses "name token" (nt), need xt
       >body       ( addr u l-addr ) 
       bc+1  swap  ( addr u offset l-addr ) 
@@ -195,20 +194,18 @@ create replacedummy
 
 \ Define a label. Assume that the user knows what they are doing and
 \ doesn't try to name label twice. If there were unresolved forward 
-\ references, resolve them here and replace complicated label handling
+\ references, resolve them here and replace the complicated label handling
 \ routine with simple new one. Yes, "-->" would be easer to read, but it 
-\ is used by old block syntax
+\ is used by old block syntax of Forth
 : ->  ( "name" -- )
    parse-name 2dup find-name    ( addr u nt|0 )
 
    \ if we have already used that name, it must be an unresolved 
    \ forward reference. Now we can replace the dummy values we have been 
-   \ using with the real stuff based on the linked list of addresses we've 
-   \ been building 
+   \ collecting with the real stuff 
    dup if      
       name>int    ( addr u xt )  \ gforth uses "name token" (nt), need xt
       >body       ( addr u l-addr ) 
-
       \ walk through the list and replace dummy addresses and offsets
       begin
          dup      ( addr u l-addr l-addr ) 
@@ -218,7 +215,6 @@ create replacedummy
          replacedummy + @  execute
          @                   ( addr u next-l-addr ) 
       repeat 
-
    then       ( addr u ) 
 
    \ (re)define the label
@@ -261,6 +257,8 @@ create replacedummy
 
 \ -----------------------
 \ OPCODE TABLES 
+\ Brute force listing of each possible opcode. Leave undefined entries
+\ empty so it is easier to port this program to other processors
 
 \ OPCODES 00 - 0F 
 00 1byte brk       01 2byte ora.zxi

@@ -96,7 +96,8 @@
         \ jumps prefixed with "J>" 
         j>  frog jsr
 
-        \ the same is true with all forward branches, we use "B>"
+        \ the same is true with all forward branches, we use "B>". 
+        \ You can have both B> and J> point to the same link
         b>  frog bne
 
         \ once we have defined the label, we can go back to using normal

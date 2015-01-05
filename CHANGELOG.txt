@@ -1,0 +1,7 @@
+Changelog for 
+A Typist's Assembler for the 65c02 in Forth
+Scot W. Stevenson <scot.stevenson@gmail.com>
+
+Add new entries to the top
+
+06. Jan 2015 - BETA 0.1 version.
