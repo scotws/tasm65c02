@@ -27,9 +27,23 @@ staging maxmemory erase
 
 variable bc  0 bc !  \ buffer counter, offset to start of staging area
 
-: swapbytes ( u -- u u )  \ convert 16 bit address to little-endian format
-   dup 0ff00 and  8 rshift   
-   swap 0ff and ; 
+\ -----------------------
+\ LOW LEVEL ASSEMBLER INSTRUCTIONS
+
+\ Return least significant byte of 16-bit number
+: lsb ( u -- u )  0ff and ; 
+
+\ Return most significant byte of 16-bit number
+: msb ( u -- u )  0ff00 and  8 rshift ; 
+
+\ convert 16 bit address to little-endian
+: swapbytes ( u -- uh ul )  dup msb swap lsb ; 
+
+\ take a little-endian 16 bit address and turn it into a "normal"
+\ big-endian number. Note stack order is reverse of swapbytes  
+: unswapbytes ( ul uh - u ) 
+   8 lshift  0ff00 and  or 
+   0ffff and ;           \ paranoid 
 
 : branchable? ( n -- f ) \ make sure branch offset is the right size
    -80 7f within ;
@@ -47,9 +61,14 @@ variable bc  0 bc !  \ buffer counter, offset to start of staging area
 \ Note OVER + SWAP is also BOUNDS in gforth 
 : str, ( addr u -- )  over + swap  ?do  i c@ b,  loop ; 
 
+\ Save zero-terminated ASCII string provided by S" instruction
+: str0, ( addr u -- ) str, 0 b, ; 
+
+\ Save linefeed-terminated  ASCII string provided by S" instruction
+: strLF, ( addr u -- ) str, 0a b, ; 
 
 \ -----------------------
-\ High level assembler instructions
+\ HIGH LEVEL ASSEMBLER INSTRUCTIONS
 
 \ set intial target address on 65c02 machine
 : origin ( 65addr -- )  lc0 ! ; 
@@ -71,40 +90,55 @@ variable bc  0 bc !  \ buffer counter, offset to start of staging area
       ." Error writing file" then ; 
 
 \ -----------------------
-\ Labels 
-
-\ placeholder for unresolved ABSOLUTE labels (16 bit) 
-\ make this easy to spot on dumps for debugging
-0ffff constant dummyaddr  
+\ LABELS 
 
 \ get current offset to start of staging area, adding one further byte 
-\ for the JSR/JMP/BRA opcode
+\ for the JSR/JMP/BRA opcode in label definitions
 : bc+1  ( -- offset)  bc @ 1+ ; 
 
 \ replace dummy references to an ABSOLUTE address word in list of 
 \ unresolved forward references by JMP/JSR with the real address. 
 \ Used by "->" once we know what the actual address is 
-: addr>dummy  ( buffer-offset -- )
-   lc swapbytes         ( buffer-offset 65addr-h 65addr-l ) 
-   rot  staging +  tuck  ( 65addr-h addr 65addr-l addr ) 
-   c! char+ c! ; 
+\ We add the content of the dummy values to the later ones so we can do
+\ addition and subtraction on the label before we know what it is
+\ (eg. "j>  mylabel 1+ jmp" ) 
+: addr>dummy          ( buffer-offset )
+   staging +  dup c@  ( addr ul ) 
+   over char+ c@      ( addr ul uh ) 
+   unswapbytes        ( addr u ) 
+   lc +  swapbytes    ( addr 65addr-h 65addr-l ) 
+   rot tuck           ( 65addr-h addr 65addr-l addr ) 
+   c!                 ( 65addr-h addr ) 
+   char+              ( 65addr-h addr+1 ) 
+   c! ; 
 
 \ replace dummy references to an RELATIVE offset byte in list of 
 \ unresolved forward references by BRA with the real offset.  
-\ Used by "->" once we know what the actual address is 
 : rel>dummy  ( buffer-offset -- )
    dup staging +     ( b-off addr ) 
    bc @              ( b-off addr bc ) 
    rot -  1-         ( addr 65off ) 
-
    dup branchable? invert if
       cr ." Offset out of branching range (" . ." )" then 
+   swap c! ; 
 
+\ replace dummy reference to the MOST SIGNIFICANT BYTE in a list of 
+\ forward references with the real MSB of the label
+: msb>dummy  ( buffer-offset -- ) 
+   staging +  lc msb  ( addr msb ) 
+   swap c! ; 
+
+\ replace dummy reference to the LEAST SIGNIFICANT BYTE in a list of 
+\ forward references with the real LSB of the label
+: lsb>dummy  ( buffer-offset -- ) 
+   staging +  lc lsb  ( addr lsb ) 
    swap c! ; 
 
 \ Use a jump table to handle replacement of dummy values, which should make 
 \ it easier to add other addresing forms for other processors
-create replacedummy  ' rel>dummy ,  ' addr>dummy , 
+create replacedummy  
+      ' rel>dummy ,  ' addr>dummy , ' msb>dummy , ' lsb>dummy ,            
+
 
 \ Handle forward unresolved references by either creating a new linked list
 \ of locations in the staging area where they need to be inserted later, or
@@ -130,18 +164,34 @@ create replacedummy  ' rel>dummy ,  ' addr>dummy ,
      \ gforth and provides a string for a defining word such as CREATE
      drop nextname create 0 , bc+1 , 
    then ; 
- 
+
+ \ Create an unresolved RELATIVE forward label reference (for branches) 
+: b>  ( "name" -- addr )  
+   addlabel 
+   0 ,           \ save zero as offset to replacement jump table 
+   lc ;          \ use lc as dummy so we stay inside branch range 
+
 \ Create an unresolved ABSOLUTE forward label reference (for jumps)
 : j> ( "name" -- addr )
    addlabel 
    cell ,        \ save cell size as offset to replacement jump table
-   dummyaddr ;
+   0 ;           \ save 0000 as dummy so we can do addition and subtraction
+                 \ on label even if we don't know what it is yet
 
-\ Create an unresolved RELATIVE forward label reference (for branches) 
-: b>  ( "name" -- addr )  
+\ Create an unresolved forward reference to the MOST SIGNIFICANT BYTE
+\ of an unresolved forward label reference
+: msb> ( "name" -- adr ) 
    addlabel 
-   0 ,           \ save zero as offset to replacement jump table 
-   lc ;         \ use lc as dummy so we stay inside branch range 
+   cell 2* ,     \ save 2* cell size as offset to replacement jump table
+   0 ;           \ save 0000 as dummy value 
+
+\ Create an unresolved forward reference to the LEAST SIGNIFICANT BYTE
+\ of an unresolved forward label reference
+: lsb> ( "name" -- adr ) 
+   addlabel 
+   cell 3 * ,    \ save 3* cell size as offset to replacement jump table
+   0 ;           \ save 0000 as dummy value 
+
 
 \ Define a label. Assume that the user knows what they are doing and
 \ doesn't try to name label twice. If there were unresolved forward 
@@ -174,10 +224,9 @@ create replacedummy  ' rel>dummy ,  ' addr>dummy ,
    \ (re)define the label
    drop nextname create lc , 
       does> @ ; 
-
   
 \ -----------------------
-\ Handle conversion and storage depending on instruction size 
+\ DEFINE OPCODES 
 
 : 1byte  ( opcode -- ) ( -- ) 
    create c,
@@ -211,6 +260,7 @@ create replacedummy  ' rel>dummy ,  ' addr>dummy ,
    
 
 \ -----------------------
+\ OPCODE TABLES 
 
 \ OPCODES 00 - 0F 
 00 1byte brk       01 2byte ora.zxi

@@ -1,7 +1,7 @@
 \ Example assembly source file for 
 \ A Typist's 65c02 Assembler in Forth
 \ Scot W. Stevenson <scot.stevenson@gmail.com>
-\ This version: 04. Jan 2015
+\ This version: 05. Jan 2015
 
 \ Remember this is assembler source file is actually a Forth programm listing
 \ as far as Forth is concerned. As such, the file type should be .fs instead
@@ -23,7 +23,7 @@
         0c000 origin
 
         \ because this is actually a Forth file, we can put more than one 
-        \ instruction in a row
+        \ instruction in a row. See MANUAL.txt for spacing conventions
         nop nop 
 
         \ instructions that have an operand put it before the opcode (the 
@@ -50,21 +50,22 @@
         1122 w, 3344 w,    \ results in 22 11 44 33
 
         \ store strings with a combination of S" and STR, (S, is reserved 
-        \ by gforth) 
+        \ by gforth). There are also words to store strings zero-terminated
+        \ or linefeed-terminated
         s" cats are cool" str, 
 
         \ define variables with VALUE instead of a special command such as
         \ ".EQU" because this is Forth
-        88 value cat
-             cat lda.#
+        88 value animal 
+             animal lda.#
 
         \ conditional assembly is trivial with Forth 
-        : havecat? ( u --- ) 
+        : cat? ( u --- ) 
             88 = if  s" nice" str,  else  s" damn" str,  then ; 
 
-        cat havecat?  \ stores the "nice" string (of course) 
+        animal cat?  \ stores the "nice" string (of course) 
 
-        \ .LC gives us the current address being assembled (the "*"
+        \ LC gives us the current address being assembled (the "*"
         \ of other assemblers). Use normal Forth math functions to 
         \ manipulate it
         lc 2 +   jmp 

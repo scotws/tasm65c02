@@ -1,7 +1,7 @@
 Manual for a Typist's 65c02 Assembler in Forth 
 Scot W. Stevenson <scot.stevenson@gmail.com>
 First version: 07. Nov 2014 ("N7 Day")
-This version: 04. Jan 2015
+This version: 05. Jan 2015
 
 
 SERIOUSLY, WHY?
@@ -79,43 +79,32 @@ When the assembler is expanded to the 65816, new tails will be required for the 
               dex                                dex
               bne loop1                    loop1 bne
 
-See the file example.fs for the commented version of a complete program listing. Note that the syntax is all lower case and only upper case in the descriptions here to make it more readable. 
+See the file example.fs for the commented version of a complete program listing, and rom.fs for a version that can be loading into ROM starting at $e000. Note that the syntax is all lower case and only upper case in the descriptions here to make it more readable. 
 
 
-
-LABELS, JUMPS AND BRANCHES
-
-As you can tell from the last exampel, labels are prefixed with "->" ("-->" would have been easier to read but it's used in anchient Forths as part of the BLOCK commands). Once a label is defined, you can just use it for backwards jumps, branches and references. When chosing a loop label name, remember that LOOP is already taken by Forth itself, as are REPEAT, BEGIN, and AGAIN. 
-   
-        -> frog  
-                      nop
-                 frog bra
-                 frog jmp
-
-Forward branches are a bit more complicated, because internally the assembler has to create a list of unresolved references until the location of the label is known ("single-pass assembler"). We deal with this by putting a special instruction at the start of the lines with forward references: "J>" for jumps (absolute addressing) and "B>" for branches (relative addressing). 
-
-              j> frog jsr 
-                      nop
-              j> frog jsr 
-                      nop
-              b> dogs bra
-                      nop
-        -> dogs
-                      brk 
-        -> frog 
-                      inc
-                      rts
-
-Once the label is defined, we can just access it without any special labels. 
-
-
-
-ASSEMBLER COMMANDS 
+COMMENTS, SPACING, AND MULTIPLE COMMANDS
 
 Since this is Forth, you start out with the complete set of Forth commands you can use in the assembler program. As such, comments are marked by a "\" which comments out everything to the end of the line (";" with conventional assemblers) and anything in round brackets.
 
               00 lda.z   ( this is a comment ) 
-              00 lda.z   \ so is this 
+              01 sta.z   \ this comment takes out the rest of the line 
+
+Since this is not a normal assembler, but Forth, we can put instructions in one line. The convention is to leave three spaces between them if they have an operand, and one if not.
+
+              10 lda.z   1000 sta
+              11 lda.z   1001 sta 
+
+              nop nop nop nop 
+
+Of course, if we have lots of instructions that are all the same, we should use a loop anyway.
+
+        : n-nops  ( u -- )  0 ?do  nop  loop ; 
+        4 n-nops 
+
+Remember to use ?DO instead of just do on an ANSI Forth system such as this one to prevent "0 0" loops that go through the complete number space. Fig-FORTH users don't have this problem. 
+
+
+ASSEMBLER COMMANDS
 
 In keeping with Forth conventions, assembler commands are not prefixed with with a dot -- in Forth, these are words that print something to the screen. 
 
@@ -126,16 +115,68 @@ In keeping with Forth conventions, assembler commands are not prefixed with with
     W, ( u -- ) Store one word (16 bit) in memory in correct little-endian format. 
 
     STR, ( addr u -- ) Store a ASCII string in memory. Use with S" STRING". Note that gforth uses S, so we can't. 
- 
+
+    STR0, (addr u -- ) Store a zero-terminated string in memory. Use with
+S" STRING".
+
+    STRLF, (addr u -- ) Store a linefeed-terminated string in memory. Use 
+with S" STRING".
+
+    LSB ( u -- u ) returns the least significant byte of a 16-bit number
+
+    MSB ( u -- u ) returns the most significant byte of a 16-bit number
+
     ADVANCE ( 65addr -- ) Continue assembly at the address given, filling everything between here and there with zeros.
 
     END ( -- addr u ) End assembly, returning the address in Forth's memory where the first assembled instruction was saved and
         the length of the binary file. Use command such as DUMP to print it to the screen. 
 
-    SAVE ( addr u "name" -- ) Following END, save the binary output to the file given. Note this will brutally overwrite existing file
-        withouth warning. 
+    SAVE ( addr u "name" -- ) Following END, save the binary output to the file given. Note this will brutally overwrite existing files withouth warning. 
 
-Note we don't need a ".EQU" command because we just use the VALUE built-in Forth command. 
+We don't need a ".EQU" command because we just use the VALUE built-in Forth command. 
+
+
+
+LABELS, JUMPS AND BRANCHES
+
+As you can tell from the earlier examples, labels are prefixed with "->" ("-->" would have been easier to read but it's used in anchient Forths as part of the BLOCK commands). Once a label is defined, you can just use it for backwards jumps, branches and references. When chosing a loop label name, remember that LOOP is already taken by Forth itself, as are REPEAT, BEGIN, and AGAIN. 
+   
+        -> frog  
+                      nop
+                 frog bra
+                 frog jmp
+
+Forward branches are a bit more complicated, because internally the assembler has to create a list of unresolved references until the location of the label is known ("single-pass assembler"). We deal with this by putting a special instruction at the start of the lines with forward references: "J>" for jumps (absolute addressing) and "B>" for branches (relative addressing). 
+
+             j>  frog jsr 
+                      nop
+             j>  frog jsr 
+                      nop
+             b>  dogs bra
+                      nop
+        -> dogs
+                      brk 
+        -> frog 
+                      inc
+                      rts
+
+Note that by convention, there are two spaces between the "J>" or "B>" instruction and the label name. Once the label is defined, we can just access it without any additional hassle. 
+
+To access the most significant byte of a unresolved address we reference by a
+label, we use the command "MSB>". For the least significant byte we use "LSB>".
+For example, let's say the subroutine PRTSTR prints a zero-terminated string
+with the address in $00 and $01
+
+        lsb>  truthstr lda.#   00 sta.z
+        msb>  truthstr lda.#   01 sta.z
+
+                prtstr jsr 
+                       brk 
+
+        -> truthstr
+             s" Cats are cool" str0,
+
+Life is somewhat easier if you define strings and subroutines at the top of the document instead of the bottom. 
 
 
 CALLING THE ASSEMBLER
@@ -147,6 +188,8 @@ Start gforth. Then, INCLUDE the assembler:
 Do the same with your source file, in this case example.fs
 
         include example.fs
+
+You will be left with ( addr u ) on the stack, describing the beginning of the machine code and the number of bytes in it. 
 
 
 ANYTHING ELSE?
@@ -172,17 +215,11 @@ LINKS
 
 - For all things to do with the 6502/65c02/65816, see http://www.6502.org/
 
-- Backgrounder on assemblers: "Assemblers And Loaders" by David Salomon (1993). Available as free PDF from 
+- Backgrounder book: "Assemblers And Loaders" by David Salomon (1993). Available as free PDF from 
   http://www.davidsalomon.name/assem.advertis/AssemAd.html
 
 - Brad Rodriguez has published a series of articles on how to write your own assembler in Forth which were invaluable for this project. See those and other writings on Forth at http://www.bradrodriguez.com/papers/
 
 - "Freedom of Assembly" Julian V. Noble (2001) about the why Forth is great for assembly programming 
   http://galileo.phys.virginia.edu/classes/551.jvn.fall01/asmcise2.pdf
-
-
-
-COPYRIGHT 
-
-
 
