@@ -235,7 +235,7 @@ The assembler uses single, unsorted linked lists to deal with unresolved forward
 
 LEGAL STUFF
 
-A Typist's 65c02 Assembler in Forth is released under the GNU Public License, see COPYING.txt. Use this software at your own risk. 
+A Typist's 65c02 Assembler in Forth is released under the GNU Public License, see LICENSE. Use this software at your own risk. 
 
 
 LINKS 
