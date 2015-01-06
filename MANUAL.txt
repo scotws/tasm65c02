@@ -1,7 +1,7 @@
 Manual for A Typist's 65c02 Assembler in Forth 
 Scot W. Stevenson <scot.stevenson@gmail.com>
 First version: 07. Nov 2014 ("N7 Day")
-This version: 05. Jan 2015 (BETA 0.1) 
+This version: 06. Jan 2015 (BETA 0.1) 
 
 
 TL;DR
@@ -34,8 +34,8 @@ HASN'T THAT BEEN DONE BEFORE?
 
 There are all kinds of great assemblers for the 6502/65c02 microprocessor out there -- see http://www.6502.org/tools/ for a list. However, the Forth assemblers available are usually old (some even pre-ANSI Forth, listed in "screens") and focused on a minimal memory footprint. The result is usually an instruction format that can be downright bizarre. Take this snippet from "A Forth Assembler for the 6502" by William Raqsdale as published in Vol 3, Issue 5 of "Forth Dimensions" (1982, http://www.forth.org/fd/FD-V03N5.pdf): 
 
-                A ROL,
-             1 11 LDY,
+               .A ROL,
+              1 # LDY,
           DATA ,X STA,
           DATA ,Y CMP,
              6 X) ADC,
