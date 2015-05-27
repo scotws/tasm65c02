@@ -104,4 +104,4 @@
    cr .( ... assembly finished. ) 
 
    \ uncomment next line to save the hex dump to the file "rom.bin"
-   \ 2dup save rom.bin 
+   2dup save rom.bin 
