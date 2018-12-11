@@ -1,7 +1,7 @@
 Manual for A Typist's 65c02 Assembler in Forth 
 Scot W. Stevenson <scot.stevenson@gmail.com>
 First version: 07. Nov 2014 ("N7 Day")
-This version: 06. Jan 2015 (BETA 0.1) 
+This version: 11. Dec 2018
 
 
 TL;DR
@@ -235,7 +235,8 @@ The assembler uses single, unsorted linked lists to deal with unresolved forward
 
 LEGAL STUFF
 
-A Typist's 65c02 Assembler in Forth is released under the GNU Public License, see LICENSE. Use this software at your own risk. 
+A Typist's 65c02 Assembler in Forth is released in the public domain, see
+LICENSE. Use this software at your own risk. 
 
 
 LINKS 
